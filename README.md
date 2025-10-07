@@ -1,3 +1,3 @@
-# Bottlecap test
+# Bottlecap Test
 
 AKA overestimating my own intelligence
