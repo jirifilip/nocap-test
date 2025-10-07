@@ -12,7 +12,6 @@ import torch.distributed as dist
 import torch.nn.functional as F
 import torch._inductor.config as config
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.distributed import init_process_group, destroy_process_group
 
 with open(sys.argv[0]) as f:
     code = f.read()
@@ -390,19 +389,17 @@ if __name__ == "__main__":
     assert args.model in {"d12", "d24", "d36", "d48"}
     # set up DDP (distributed data parallel). torchrun sets this env variable
     # use of DDP atm demands CUDA, we set the device appropriately according to rank
-    assert torch.cuda.is_available(), "for now i think we need CUDA for DDP"
-    init_process_group(backend="nccl")
-    ddp_rank = int(os.environ["RANK"])
-    ddp_local_rank = int(os.environ["LOCAL_RANK"])
-    ddp_world_size = int(os.environ["WORLD_SIZE"])
+    # assert torch.cuda.is_available(), "for now i think we need CUDA for DDP"
+    ddp_rank = 1
+    ddp_local_rank = 1
+    ddp_world_size = 1
     assert (
         args.grad_accumulation_steps % ddp_world_size == 0
     ), "grad_accumulation_steps must be divisible by world size"
     args.grad_accumulation_steps //= (
         ddp_world_size  # each gpu does its fraction of the work
     )
-    device = f"cuda:{ddp_local_rank}"
-    torch.cuda.set_device(device)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     master_process = ddp_rank == 0  # this process will do logging, checkpointing etc.
     seed_offset = 0  # each process gets the exact same seed
     print(f"using device: {device}")
